@@ -2,6 +2,7 @@ package logger
 
 import "log/slog"
 
+// TO DO
 type Logger interface {
 	Debug(msg string)
 	Info(msg string)
