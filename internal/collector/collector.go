@@ -32,14 +32,14 @@ type NetworkProtocol struct {
 	Percent  float64
 }
 
-type TrafficInfo struct {
-	SourceIP   string
-	SourcePort int
-	DestIP     string
-	DestPort   int
-	Protocol   string
-	BPS        float64
-}
+// type TrafficInfo struct {
+// 	SourceIP   string
+// 	SourcePort int
+// 	DestIP     string
+// 	DestPort   int
+// 	Protocol   string
+// 	BPS        float64
+// }
 
 type ListeningSocket struct {
 	Command  string
@@ -57,7 +57,7 @@ type TCPStates struct {
 type Collector struct {
 	LoadAverage     LoadAverage
 	CPUUsage        CPUUsage
-	DiskUsage       DiskUsage
+	DiskUsage       []DiskUsage
 	FileSystemUsage []FileSystemUsage
 	NetworkProtocol []NetworkProtocol
 	TrafficInfo     []TrafficInfo
@@ -65,34 +65,21 @@ type Collector struct {
 	ListeningSocket []ListeningSocket
 }
 
-func New() *Collector {
-	return &Collector{}
+func Collect() *Collector {
+	loadAvg, _ := LoadAvg()
+	cpuUsage, _ := CpuStat()
+	diskUsage, _ := DiskStat()
+	fileSystemUsage := FsStat()
+	networkProtocols, trafficInfo, tcpStates, listeningSocket := TrafficGetInfo()
+
+	return &Collector{
+		LoadAverage:     loadAvg,
+		CPUUsage:        cpuUsage,
+		DiskUsage:       diskUsage,
+		FileSystemUsage: fileSystemUsage,
+		NetworkProtocol: networkProtocols,
+		TCPStates:       tcpStates,
+		TrafficInfo:     trafficInfo,
+		ListeningSocket: listeningSocket,
+	}
 }
-
-// func collectLoadAverage() LoadAverage {
-
-// }
-
-// func collectCPUUsage() CPUUsage {
-
-// }
-
-// func collectDiskUsage() DiskUsage {
-
-// }
-
-// func collectFileSystemUsage() []FileSystemUsage {
-
-// }
-
-// func collectNetworkProtocol() []NetworkProtocol {
-
-// }
-
-// func collectTCPStates() []TCPStates {
-
-// }
-
-// func collectListeningSocket() []ListeningSocket {
-
-// }
