@@ -1,0 +1,84 @@
+syntax = "proto3";
+package collector;
+option go_package = "./;collectorpb"; 
+
+service MetricsCollector {
+        rpc CollectMetrics (MetricsRequest) returns (stream MetricsResponse);
+}
+
+
+message MetricsRequest{
+    int32 n_second = 1;
+    int32 m_second = 2;
+}
+
+message MetricsResponse {
+        Collector collector = 1;
+}
+
+message LoadAverage {
+        double one_minute      = 1;
+        double five_minutes    = 2;
+        double fifteen_minutes = 3;
+}
+
+message CPUUsage {
+        double user_mode   = 1;
+        double system_mode = 2;
+        double idle        = 3;
+}
+
+message DiskUsage {
+        string name     = 1;
+        double tps      = 2;
+        double kbpersec = 3;
+}
+
+message FileSystemUsage {
+        string file_system    = 1;
+        double usedmb         = 2;
+        double used_percent   = 3;
+        double used_inode     = 4;
+        double inode_percent  = 5;
+}
+
+message NetworkProtocol  {
+        string protocol = 1;
+        int64 bytes     = 2;
+        double percent  = 3;
+}
+
+message TrafficInfo  {
+        string sourceip    = 1;
+        int64 source_port  = 2;
+        string destip      = 3;
+        int64 dest_port    = 4;
+        string protocol    = 5;
+        double bps         = 6;
+        int64 Bytes        = 7;
+	string State       = 8;
+}
+
+message ListeningSocket  {
+        string command  = 1;
+        int64 pid       = 2;
+        string user     = 3;
+        string protocol = 4;
+        int64 port      = 5;
+}
+
+message TCPStates  {
+        string state = 1;
+        int64 count  = 2;
+}
+
+message Collector  {
+        LoadAverage loadaverage                         = 1;
+        CPUUsage cpuusage                               = 2;
+        DiskUsage diskusage                             = 3;
+        repeated FileSystemUsage filesystemusage        = 4;
+        repeated NetworkProtocol networkprotocol        = 5;
+        repeated TrafficInfo trafficinfo                = 6;
+        repeated TCPStates tcpstates                    = 7;
+        repeated ListeningSocket listeningsocket        = 8;
+}
