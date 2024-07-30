@@ -1,5 +1,9 @@
 package collector
 
+import (
+	"github.com/Gilfoyle3301/system-stats-daemon/internal/config"
+)
+
 type LoadAverage struct {
 	OneMinute      float64
 	FiveMinutes    float64
@@ -32,15 +36,6 @@ type NetworkProtocol struct {
 	Percent  float64
 }
 
-// type TrafficInfo struct {
-// 	SourceIP   string
-// 	SourcePort int
-// 	DestIP     string
-// 	DestPort   int
-// 	Protocol   string
-// 	BPS        float64
-// }
-
 type ListeningSocket struct {
 	Command  string
 	PID      int
@@ -65,12 +60,36 @@ type Collector struct {
 	ListeningSocket []ListeningSocket
 }
 
-func Collect() *Collector {
-	loadAvg, _ := LoadAvg()
-	cpuUsage, _ := CpuStat()
-	diskUsage, _ := DiskStat()
-	fileSystemUsage := FsStat()
-	networkProtocols, trafficInfo, tcpStates, listeningSocket := TrafficGetInfo()
+func Collect(conf *config.Config) *Collector {
+	var (
+		loadAvg          LoadAverage
+		cpuUsage         CPUUsage
+		diskUsage        []DiskUsage
+		fileSystemUsage  []FileSystemUsage
+		networkProtocols []NetworkProtocol
+		trafficInfo      []TrafficInfo
+		tcpStates        []TCPStates
+		listeningSocket  []ListeningSocket
+	)
+
+	if conf.Metrics.EnableLoadAverage {
+		loadAvg, _ = LoadAvg()
+	}
+	if conf.Metrics.EnableCPU {
+		cpuUsage, _ = CpuStat()
+	}
+
+	if conf.Metrics.EnableDiskUsage {
+		diskUsage, _ = DiskStat()
+	}
+
+	if conf.Metrics.EnableFileSystemUsage {
+		fileSystemUsage = FsStat()
+	}
+
+	if conf.Metrics.EnableNetworkProtocol {
+		networkProtocols, trafficInfo, tcpStates, listeningSocket = TrafficGetInfo()
+	}
 
 	return &Collector{
 		LoadAverage:     loadAvg,

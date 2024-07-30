@@ -294,6 +294,7 @@ func findProcessByInode(inode string) (int, string, error) {
 
 func TrafficGetInfo() ([]NetworkProtocol, []TrafficInfo, []TCPStates, []ListeningSocket) {
 	var totalBytes int
+	var percent int
 	var networkProtocol []NetworkProtocol
 	var tcpState []TCPStates
 
@@ -302,7 +303,12 @@ func TrafficGetInfo() ([]NetworkProtocol, []TrafficInfo, []TCPStates, []Listenin
 		totalBytes += tbytes
 	}
 	for protocol, bytes := range protoStat {
-		percent := bytes / totalBytes * 100
+		if totalBytes != 0 {
+			percent = bytes / totalBytes * 100
+		} else {
+			percent = bytes
+		}
+
 		networkProtocol = append(networkProtocol, NetworkProtocol{
 			Protocol: protocol,
 			Bytes:    int64(bytes),

@@ -1,42 +1,62 @@
 package grpcserver
 
 import (
+	"context"
+	"fmt"
+	"net"
 	"sync"
 	"time"
 
 	collectorpb "github.com/Gilfoyle3301/system-stats-daemon/api/pb"
 	"github.com/Gilfoyle3301/system-stats-daemon/internal/collector"
+	"github.com/Gilfoyle3301/system-stats-daemon/internal/config"
+	"google.golang.org/grpc"
 )
 
 type MetricsCollectorServer struct {
 	collectorpb.UnimplementedMetricsCollectorServer
+	collector *collector.Collector
+	mu        sync.Mutex
+	conf      *config.Config
 }
 
 func (s *MetricsCollectorServer) CollectMetrics(req *collectorpb.MetricsRequest, stream collectorpb.MetricsCollector_CollectMetricsServer) error {
 	period := time.Duration(req.GetNSecond()) * time.Second
-	averageTime := time.Duration(req.GetMSecond()) * time.Second
 	ticker := time.NewTicker(period)
 	defer ticker.Stop()
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
 	var (
 		dataList []*collector.Collector
 		mu       sync.Mutex
 	)
+	go func() {
+		for {
+			select {
+			case <-ticker.C:
+				data := collector.Collect(s.conf)
+				mu.Lock()
+				dataList = append(dataList, data)
+				mu.Unlock()
+			case <-ctx.Done():
+				return
+			}
+		}
+	}()
+
 	for {
 		select {
 		case <-ticker.C:
-			data := collector.Collect()
 			mu.Lock()
-			dataList = append(dataList, data)
-			if len(dataList) < int(averageTime/period) {
-				dataList = dataList[1:]
-			}
+			averageData := computeAverages(dataList)
 			mu.Unlock()
 
-			averageData := computeAverages(dataList)
-			response := collectorpb.MetricsResponse{
+			response := &collectorpb.MetricsResponse{
 				Collector: averageData,
 			}
-			if err := stream.Send(&response); err != nil {
+
+			if err := stream.Send(response); err != nil {
 				return err
 			}
 		case <-stream.Context().Done():
@@ -79,12 +99,11 @@ func computeAverages(dataList []*collector.Collector) *collectorpb.Collector {
 
 		for _, conn := range metrics.TrafficInfo {
 			found := false
-			for _, accConn := range avgConnections {
-				if accConn.Sourceip == conn.SourceIP && int(accConn.SourcePort) == conn.SourcePort &&
-					accConn.Destip == conn.DestIP && int(accConn.DestPort) == conn.DestPort &&
-					accConn.Protocol == conn.Protocol && accConn.State == conn.State {
-					accConn.Bytes += int64(conn.Bytes)
-					accConn.Bps += conn.BPS
+			for _, avgConn := range avgConnections {
+				if avgConn.Sourceip == conn.SourceIP && int(avgConn.SourcePort) == int(conn.SourcePort) &&
+					avgConn.Destip == conn.DestIP && int(avgConn.DestPort) == int(conn.DestPort) &&
+					avgConn.Protocol == conn.Protocol && avgConn.State == conn.State {
+					avgConn.Bytes += int64(conn.Bytes)
 					found = true
 					break
 				}
@@ -103,11 +122,30 @@ func computeAverages(dataList []*collector.Collector) *collectorpb.Collector {
 			}
 		}
 
+		for _, socket := range metrics.ListeningSocket {
+			found := false
+			for _, avgSocket := range avgListeningSockets {
+				if avgSocket.Pid == int64(socket.PID) && avgSocket.Command == socket.Command && avgSocket.User == socket.User {
+					found = true
+					break
+				}
+			}
+			if !found {
+				avgListeningSockets = append(avgListeningSockets, &collectorpb.ListeningSocket{
+					Command:  socket.Command,
+					User:     socket.User,
+					Protocol: socket.Protocol,
+					Pid:      int64(socket.PID),
+					Port:     int64(socket.Port),
+				})
+			}
+
+		}
 		for _, state := range metrics.TCPStates {
 			found := false
-			for _, accState := range avgTCPState {
-				if accState.State == state.State {
-					accState.Count += int64(state.Count)
+			for _, avgState := range avgTCPState {
+				if avgState.State == state.State {
+					avgState.Count += int64(state.Count)
 					found = true
 					break
 				}
@@ -120,14 +158,12 @@ func computeAverages(dataList []*collector.Collector) *collectorpb.Collector {
 			}
 		}
 
-		avgListeningSockets = append(avgListeningSockets, &collectorpb.ListeningSocket{})
-
 		for _, fs := range metrics.FileSystemUsage {
 			found := false
-			for _, accFS := range avgFileSystemUsages {
-				if accFS.FileSystem == fs.FileSystem {
-					accFS.Usedmb += fs.UsedMB
-					accFS.UsedInode += fs.UsedInode
+			for _, avgFs := range avgFileSystemUsages {
+				if avgFs.FileSystem == fs.FileSystem {
+					avgFs.Usedmb += fs.UsedMB
+					avgFs.UsedInode += fs.UsedInode
 					found = true
 					break
 				}
@@ -142,11 +178,7 @@ func computeAverages(dataList []*collector.Collector) *collectorpb.Collector {
 		}
 
 		for _, proto := range metrics.NetworkProtocol {
-			if _, exists := protocolBytes[proto.Protocol]; exists {
-				protocolBytes[proto.Protocol] += proto.Bytes
-			} else {
-				protocolBytes[proto.Protocol] = proto.Bytes
-			}
+			protocolBytes[proto.Protocol] += proto.Bytes
 		}
 	}
 
@@ -168,5 +200,20 @@ func computeAverages(dataList []*collector.Collector) *collectorpb.Collector {
 		Listeningsocket: avgListeningSockets,
 		Diskusage:       avgDisk,
 	}
+}
 
+func StartServer(col *collector.Collector, grpcport string, config *config.Config) {
+	server := grpc.NewServer()
+	collectorpb.RegisterMetricsCollectorServer(server, &MetricsCollectorServer{
+		collector: col,
+		conf:      config,
+	})
+
+	lis, err := net.Listen("tcp", fmt.Sprintf(":%v", grpcport))
+	if err != nil {
+		panic("Failed to listen on port " + grpcport + ": " + err.Error())
+	}
+	if err := server.Serve(lis); err != nil {
+		panic("Failed to serve gRPC server: " + err.Error())
+	}
 }

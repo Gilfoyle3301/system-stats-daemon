@@ -1,3 +1,0 @@
-package sender
-
-// TO DO

@@ -1,4 +1,9 @@
-interval: 10s
+interval: 2
 server:
-  port: ":50051"
-  
+  port: "5005"
+metrics:
+  enableLoadAverage: true
+  # enableCPU: true
+  # enableDiskUsage: true
+  # enableFileSystemUsage: true
+  # enableNetworkProtocol: true
