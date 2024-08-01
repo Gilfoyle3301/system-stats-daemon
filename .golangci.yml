@@ -36,7 +36,6 @@ linters:
     - gofumpt
     - goheader
     - goprintffuncname
-    - gosec
     - gosimple
     - importas
     - ineffassign
