@@ -9,7 +9,6 @@ import (
 
 	collectorpb "github.com/Gilfoyle3301/system-stats-daemon/api/pb"
 	"github.com/Gilfoyle3301/system-stats-daemon/internal/collector"
-	"github.com/Gilfoyle3301/system-stats-daemon/internal/config"
 	"google.golang.org/grpc"
 )
 
@@ -17,7 +16,7 @@ type MetricsCollectorServer struct {
 	collectorpb.UnimplementedMetricsCollectorServer
 	collector *collector.Collector
 	mu        sync.Mutex
-	conf      *config.Config
+	// conf      *config.Config
 }
 
 func (s *MetricsCollectorServer) CollectMetrics(req *collectorpb.MetricsRequest, stream collectorpb.MetricsCollector_CollectMetricsServer) error {
@@ -35,7 +34,7 @@ func (s *MetricsCollectorServer) CollectMetrics(req *collectorpb.MetricsRequest,
 		for {
 			select {
 			case <-ticker.C:
-				data := collector.Collect(s.conf)
+				data := collector.Collect()
 				mu.Lock()
 				dataList = append(dataList, data)
 				mu.Unlock()
@@ -202,11 +201,10 @@ func computeAverages(dataList []*collector.Collector) *collectorpb.Collector {
 	}
 }
 
-func StartServer(col *collector.Collector, grpcport string, config *config.Config) {
+func StartServer(col *collector.Collector, grpcport string) {
 	server := grpc.NewServer()
 	collectorpb.RegisterMetricsCollectorServer(server, &MetricsCollectorServer{
 		collector: col,
-		conf:      config,
 	})
 
 	lis, err := net.Listen("tcp", fmt.Sprintf(":%v", grpcport))

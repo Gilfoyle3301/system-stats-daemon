@@ -171,9 +171,6 @@ func getUserFromPID(pid int) (string, error) {
 
 	cmdlineScanner := bufio.NewScanner(cmdlineFile)
 	cmdlineScanner.Scan()
-	// cmdline := cmdlineScanner.Text()
-	// command := strings.Split(cmdline, "\x00")[0]
-
 	uidPath := fmt.Sprintf("/proc/%d/status", pid)
 	statusFile, err := os.Open(uidPath)
 	if err != nil {

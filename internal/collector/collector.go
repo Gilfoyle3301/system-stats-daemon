@@ -1,9 +1,5 @@
 package collector
 
-import (
-	"github.com/Gilfoyle3301/system-stats-daemon/internal/config"
-)
-
 type LoadAverage struct {
 	OneMinute      float64
 	FiveMinutes    float64
@@ -60,7 +56,7 @@ type Collector struct {
 	ListeningSocket []ListeningSocket
 }
 
-func Collect(conf *config.Config) *Collector {
+func Collect() *Collector {
 	var (
 		loadAvg          LoadAverage
 		cpuUsage         CPUUsage
@@ -72,24 +68,11 @@ func Collect(conf *config.Config) *Collector {
 		listeningSocket  []ListeningSocket
 	)
 
-	if conf.Metrics.EnableLoadAverage {
-		loadAvg, _ = LoadAvg()
-	}
-	if conf.Metrics.EnableCPU {
-		cpuUsage, _ = CpuStat()
-	}
-
-	if conf.Metrics.EnableDiskUsage {
-		diskUsage, _ = DiskStat()
-	}
-
-	if conf.Metrics.EnableFileSystemUsage {
-		fileSystemUsage = FsStat()
-	}
-
-	if conf.Metrics.EnableNetworkProtocol {
-		networkProtocols, trafficInfo, tcpStates, listeningSocket = TrafficGetInfo()
-	}
+	loadAvg, _ = LoadAvg()
+	cpuUsage, _ = CpuStat()
+	diskUsage, _ = DiskStat()
+	fileSystemUsage = FsStat()
+	networkProtocols, trafficInfo, tcpStates, listeningSocket = TrafficGetInfo()
 
 	return &Collector{
 		LoadAverage:     loadAvg,

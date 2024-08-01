@@ -34,7 +34,7 @@ func CpuStat() (CPUUsage, error) {
 	if err != nil {
 		return objectStat, fmt.Errorf("failed to parse /proc/stat: %v", err)
 	}
-	idleTime, err := strconv.ParseInt(parseField[3], 10, 64)
+	idleTime, err := strconv.ParseInt(parseField[4], 10, 64)
 	if err != nil {
 		return objectStat, fmt.Errorf("failed to parse /proc/stat: %v", err)
 	}

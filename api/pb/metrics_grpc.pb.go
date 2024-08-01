@@ -2,7 +2,7 @@
 // versions:
 // - protoc-gen-go-grpc v1.2.0
 // - protoc             v3.21.12
-// source: metrics.proto
+// source: api/pb/metrics.proto
 
 package collectorpb
 
@@ -128,5 +128,5 @@ var MetricsCollector_ServiceDesc = grpc.ServiceDesc{
 			ServerStreams: true,
 		},
 	},
-	Metadata: "metrics.proto",
+	Metadata: "api/pb/metrics.proto",
 }
