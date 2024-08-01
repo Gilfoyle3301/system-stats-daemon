@@ -15,8 +15,6 @@ import (
 type MetricsCollectorServer struct {
 	collectorpb.UnimplementedMetricsCollectorServer
 	collector *collector.Collector
-	mu        sync.Mutex
-	// conf      *config.Config
 }
 
 func (s *MetricsCollectorServer) CollectMetrics(req *collectorpb.MetricsRequest, stream collectorpb.MetricsCollector_CollectMetricsServer) error {
@@ -69,16 +67,14 @@ func computeAverages(dataList []*collector.Collector) *collectorpb.Collector {
 	if count == 0 {
 		return &collectorpb.Collector{}
 	}
-
 	avgLoad := &collectorpb.LoadAverage{}
 	avgCPU := &collectorpb.CPUUsage{}
-	avgDisk := &collectorpb.DiskUsage{}
+	avgDisk := []*collectorpb.DiskUsage{}
 	avgConnections := []*collectorpb.TrafficInfo{}
 	avgTCPState := []*collectorpb.TCPStates{}
 	avgListeningSockets := []*collectorpb.ListeningSocket{}
 	avgFileSystemUsages := []*collectorpb.FileSystemUsage{}
 	protocolBytes := make(map[string]int64)
-
 	for _, metrics := range dataList {
 		avgLoad.OneMinute += metrics.LoadAverage.OneMinute
 		avgLoad.FiveMinutes += metrics.LoadAverage.FiveMinutes
@@ -95,6 +91,25 @@ func computeAverages(dataList []*collector.Collector) *collectorpb.Collector {
 		avgCPU.UserMode /= float64(count)
 		avgCPU.SystemMode /= float64(count)
 		avgCPU.Idle /= float64(count)
+
+		for _, diskState := range metrics.DiskUsage {
+			found := false
+			for _, avgState := range avgDisk {
+				if avgState.Name == diskState.Name {
+					avgState.Kbpersec += diskState.KBPerSec
+					avgState.Tps += diskState.TPS
+					found = true
+					break
+				}
+			}
+			if !found {
+				avgDisk = append(avgDisk, &collectorpb.DiskUsage{
+					Name:     diskState.Name,
+					Tps:      diskState.TPS,
+					Kbpersec: diskState.KBPerSec,
+				})
+			}
+		}
 
 		for _, conn := range metrics.TrafficInfo {
 			found := false
@@ -138,7 +153,6 @@ func computeAverages(dataList []*collector.Collector) *collectorpb.Collector {
 					Port:     int64(socket.Port),
 				})
 			}
-
 		}
 		for _, state := range metrics.TCPStates {
 			found := false

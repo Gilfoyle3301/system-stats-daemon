@@ -7,7 +7,6 @@ import (
 	"github.com/go-yaml/yaml"
 )
 
-// TO DO
 type Config struct {
 	Interval time.Duration `yaml:"interval"`
 	Server   struct {

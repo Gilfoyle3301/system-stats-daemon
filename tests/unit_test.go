@@ -67,7 +67,6 @@ func TestUnitPackage(t *testing.T) {
 		require.NotEmpty(t, TrafficInfo)
 		require.NotEmpty(t, TCPStates)
 		require.NotEmpty(t, ListeningSocket)
-
 	})
 	t.Run("filesystem slice", func(t *testing.T) {
 		testData := collector.FsStat()

@@ -75,7 +75,7 @@ message TCPStates  {
 message Collector  {
         LoadAverage loadaverage                         = 1;
         CPUUsage cpuusage                               = 2;
-        DiskUsage diskusage                             = 3;
+        repeated DiskUsage diskusage                             = 3;
         repeated FileSystemUsage filesystemusage        = 4;
         repeated NetworkProtocol networkprotocol        = 5;
         repeated TrafficInfo trafficinfo                = 6;

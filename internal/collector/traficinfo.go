@@ -12,6 +12,8 @@ import (
 	"time"
 )
 
+const unknown = "unknown"
+
 type TrafficInfo struct {
 	SourceIP   string
 	SourcePort int
@@ -43,9 +45,7 @@ func parsHex(hex string) (string, int) {
 }
 
 func getConnectionInfo(protocol, file string) ([]TrafficInfo, error) {
-
 	var objectConnection []TrafficInfo
-
 	getInfo, err := os.Open(file)
 	if err != nil {
 		return nil, err
@@ -77,10 +77,10 @@ func getConnectionInfo(protocol, file string) ([]TrafficInfo, error) {
 	return objectConnection, nil
 }
 
-func aggregateInfo(M time.Duration) ([]TrafficInfo, map[string]int, map[string]int) {
-	ticker := time.NewTicker(M)
+func aggregateInfo(m time.Duration) ([]TrafficInfo, map[string]int, map[string]int) {
+	ticker := time.NewTicker(m)
 	defer ticker.Stop()
-	var aggregateSlice []TrafficInfo
+	aggregateSlice := make([]TrafficInfo, 50)
 	statisticsMap := make(map[string]*TrafficInfo)
 	protocolBytesMap := make(map[string]int)
 	protocolStateMap := make(map[string]int)
@@ -111,7 +111,7 @@ func aggregateInfo(M time.Duration) ([]TrafficInfo, map[string]int, map[string]i
 				}
 			}
 		}
-		if time.Since(run) >= M {
+		if time.Since(run) >= m {
 			break
 		}
 	}
@@ -143,7 +143,7 @@ func getListeningSockets() ([]ListeningSocket, error) {
 
 			user, err := getUserFromPID(socket.PID)
 			if err != nil {
-				user = "unknown"
+				user = unknown
 			}
 
 			ls := ListeningSocket{
@@ -174,7 +174,7 @@ func getUserFromPID(pid int) (string, error) {
 	uidPath := fmt.Sprintf("/proc/%d/status", pid)
 	statusFile, err := os.Open(uidPath)
 	if err != nil {
-		return "unknown", err
+		return unknown, err
 	}
 	defer statusFile.Close()
 
@@ -190,12 +190,12 @@ func getUserFromPID(pid int) (string, error) {
 
 	uid, err := strconv.Atoi(uidString)
 	if err != nil {
-		return "unknown", err
+		return unknown, err
 	}
 
 	u, err := user.LookupId(fmt.Sprintf("%d", uid))
 	if err != nil {
-		return "unknown", err
+		return unknown, err
 	}
 
 	return u.Username, nil
@@ -231,7 +231,7 @@ func parseSockets(file string) ([]socketInfo, error) {
 
 		pid, command, err := findProcessByInode(inodeStr)
 		if err != nil {
-			pid, command = -1, "unknown"
+			pid, command = -1, unknown
 		}
 
 		socket := socketInfo{
@@ -292,8 +292,8 @@ func findProcessByInode(inode string) (int, string, error) {
 func TrafficGetInfo() ([]NetworkProtocol, []TrafficInfo, []TCPStates, []ListeningSocket) {
 	var totalBytes int
 	var percent int
-	var networkProtocol []NetworkProtocol
-	var tcpState []TCPStates
+	networkProtocol := make([]NetworkProtocol, 100)
+	tcpState := make([]TCPStates, 100)
 
 	connects, protoStat, statTCP := aggregateInfo(time.Second)
 	for _, tbytes := range protoStat {

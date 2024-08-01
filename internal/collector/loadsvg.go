@@ -13,14 +13,14 @@ func LoadAvg() (LoadAverage, error) {
 
 	loadavg, err := os.Open("/proc/loadavg")
 	if err != nil {
-		return objectLA, fmt.Errorf("failed to open /proc/loadavg: %v", err)
+		return objectLA, fmt.Errorf("failed to open /proc/loadavg: %w", err)
 	}
 	defer loadavg.Close()
 
 	scanner := bufio.NewScanner(loadavg)
 	if !scanner.Scan() {
 		err := scanner.Err()
-		return objectLA, fmt.Errorf("failed to read /proc/loadavg: %v", err)
+		return objectLA, fmt.Errorf("failed to read /proc/loadavg: %w", err)
 	}
 	line := strings.Fields(scanner.Text())
 	OneMinute, err := strconv.ParseFloat(line[0], 64)

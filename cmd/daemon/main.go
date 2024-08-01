@@ -54,7 +54,7 @@ func main() {
 
 	stream, err := daemonClient.CollectMetrics(context.Background(), &req)
 	if err != nil {
-		log.Fatalf("Error when calling CollectMetrics: %v", err)
+		log.Println("Error when calling CollectMetrics:", err)
 	}
 	for {
 		resp, err := stream.Recv()

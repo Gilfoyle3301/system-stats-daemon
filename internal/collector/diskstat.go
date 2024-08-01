@@ -17,10 +17,10 @@ type DiskParams struct {
 }
 
 func diskCheck() (map[string]DiskParams, error) {
-	var objectDiskStat = make(map[string]DiskParams)
+	objectDiskStat := make(map[string]DiskParams)
 	diskStat, err := os.Open("/proc/diskstats")
 	if err != nil {
-		return nil, fmt.Errorf("failed to open /proc/diskstats: %v", err)
+		return nil, fmt.Errorf("failed to open /proc/diskstats: %w", err)
 	}
 	defer diskStat.Close()
 	scanner := bufio.NewScanner(diskStat)
@@ -28,19 +28,19 @@ func diskCheck() (map[string]DiskParams, error) {
 		diskInfo := strings.Fields(scanner.Text())
 		rio, err := strconv.ParseInt(diskInfo[3], 10, 64)
 		if err != nil {
-			return nil, fmt.Errorf("failed to parse /proc/diskstats: %v", err)
+			return nil, fmt.Errorf("failed to parse /proc/diskstats: %w", err)
 		}
 		rsect, err := strconv.ParseInt(diskInfo[5], 10, 64)
 		if err != nil {
-			return nil, fmt.Errorf("failed to parse /proc/diskstats: %v", err)
+			return nil, fmt.Errorf("failed to parse /proc/diskstats: %w", err)
 		}
 		wio, err := strconv.ParseInt(diskInfo[7], 10, 64)
 		if err != nil {
-			return nil, fmt.Errorf("failed to parse /proc/diskstats: %v", err)
+			return nil, fmt.Errorf("failed to parse /proc/diskstats: %w", err)
 		}
 		wsect, err := strconv.ParseInt(diskInfo[9], 10, 64)
 		if err != nil {
-			return nil, fmt.Errorf("failed to parse /proc/diskstats: %v", err)
+			return nil, fmt.Errorf("failed to parse /proc/diskstats: %w", err)
 		}
 		objectDiskStat[diskInfo[2]] = DiskParams{
 			rsect: uint64(rsect),
@@ -53,7 +53,7 @@ func diskCheck() (map[string]DiskParams, error) {
 }
 
 func DiskStat() ([]DiskUsage, error) {
-	var stat []DiskUsage
+	stat := make([]DiskUsage, 50)
 	initValue, err := diskCheck()
 	if err != nil {
 		return nil, err
