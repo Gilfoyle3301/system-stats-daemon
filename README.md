@@ -51,6 +51,8 @@ sh go mod tidy
  - config - путь до файла конфигурации
 
 ```
+# Запуск от root, сервис должен иметь доступ к /proc
+
 sh go run cmd/daemon/main.go --config=internal/config/config.yml
 
 ```
