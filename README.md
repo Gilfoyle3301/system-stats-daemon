@@ -34,7 +34,7 @@ System Stats Daemon — это демон, который собирает си�
 1. Клонируйте репозиторий:
 
 ```
-sh git clone https://github.com/Gilfoyle3301/system-stats-daemon.git cd system-stats-daemon
+sh git clone https://github.com/Gilfoyle3301/system-stats-daemon.git cd system-stats-daemon 
 ```
 
 2. Установите необходимые зависимости:
@@ -46,9 +46,12 @@ sh go mod tidy
 
 ### Запуск daemon
 
-```
+#### Доступные флаги: 
+ - grpcport - порт на котором будет запущен grpc-сервер (default: 5005)
+ - config - путь до файла конфигурации
 
-sh go run cmd/daemon/main.go
+```
+sh go run cmd/daemon/main.go --config=internal/config/config.yml
 
 ```
 
