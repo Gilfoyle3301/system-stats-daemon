@@ -1,0 +1,10 @@
+interval: 5
+period: 15
+server:
+  port: "5005"
+metrics:
+  enableLoadAverage: true
+  enableCPU: true
+  enableDiskUsage: true
+  enableFileSystemUsage: true
+  enableNetworkProtocol: true
